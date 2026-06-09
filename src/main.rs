@@ -155,6 +155,13 @@ async fn handle_tool_call(tool_call: &Value, messages: &mut Vec<Value>) {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    match dotenvy::from_filename("/home/istipisti113/config/variables/raa.env") {
+        Ok(_a) => {}
+        Err(_e) => {
+            eprintln!(".env file could not be loaded.");
+            return Ok(());
+        }
+    };
     dotenvy::dotenv().ok();
     //let args = Args::parse();
 
