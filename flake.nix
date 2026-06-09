@@ -1,21 +1,54 @@
 {
-  description = "Rust AI assistant";
+  description = "Rust Ai Assistant";
+
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     rust-overlay.url = "github:oxalica/rust-overlay";
   };
 
-  outputs = { self, nixpkgs, rust-overlay }:
-    rust-overlay.lib.eachDefaultSystem (system:
-      let
-        pkgs = nixpkgs.legacyPackages.${system};
-        rustPlatform = pkgs.rustPlatform;
-      in {
-        packages.your-app = rustPlatform.buildRustPackage {
-          pname = "your-app";
-          version = "0.1.0";
-          src = ./.;
-          cargoLock.lockFile = ./Cargo.lock;
+  outputs =
+    {
+      self,
+      nixpkgs,
+      rust-overlay,
+    }:
+    let
+      system = "x86_64-linux";
+      overlays = [ (import rust-overlay) ];
+      pkgs = import nixpkgs { inherit system overlays; };
+
+      runtimeDeps = with pkgs; [
+      ];
+      buildDeps = with pkgs; [
+        pkg-config
+        (rust-bin.stable.latest.default.override {
+          extensions = [ "rust-src" ];
+        })
+      ];
+    in
+    {
+      devShells.${system}.default = pkgs.mkShell {
+        buildInputs = buildDeps ++ runtimeDeps;
+      };
+
+      packages.${system}.default = pkgs.rustPlatform.buildRustPackage {
+        pname = "rust ai assistant";
+        version = "0.1.0";
+        src = ./.;
+
+        cargoLock = {
+          lockFile = ./Cargo.lock;
         };
-      });
+
+        nativeBuildInputs = [ pkgs.pkg-config ];
+        buildInputs = runtimeDeps;
+
+        doCheck = false;
+      };
+
+      apps.${system}.default = {
+        type = "app";
+        program = "${self.packages.${system}.default}/bin/raa";
+      };
+    };
 }
